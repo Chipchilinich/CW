@@ -1,14 +1,18 @@
 [tool.poetry]
-name = "database-project"
+name = "hh-project5"
 version = "0.1.0"
 description = ""
-authors = ["alexandra kashina <kashin159@gmail.com>"]
+authors = ["rafaelmanasyan <workpageraf@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-psycopg2 = "^2.9.9"
 requests = "^2.32.3"
+black = "^24.8.0"
+isort = "^5.13.2"
+mypy = "^1.11.2"
+pytest = "^8.3.3"
+psycopg2 = "^2.9.9"
 
 
 [build-system]

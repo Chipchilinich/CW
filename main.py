@@ -1,67 +1,51 @@
-from src.get_vacancy import HH
-from src.config import config
-from src.DB_class import DBManager
-from src.ulils import create_database, save_data_to_database
+from src.api_class_module import (FindEmployerFromHHApi,
+                                  FindVacancyFromHHApi)
+from src.DBCreate_module import DBConnection
+from src.utils import (filter_vacancies, get_top_vacancies,
+                       get_vacancies_by_salary, sort_vacancies)
+from src.vacancy_class import Vacancy
 
 
-def main():
-    """Функция для работы прогрммы"""
-    params = config()
-
-    data_employer = HH().get_employers()
-    data_vacancies = HH().load_vacancies()
-    create_database('hh_db', params)
-    save_data_to_database(data_employer, data_vacancies, 'hh_db', params)
-    db_manager = DBManager(params)
-
-    print("""
-        Введите цифру для получения нужной Вам информации
-        0 - Завершить программу
-        1 - получает список всех компаний и количество вакансий у каждой компаний.
-        2 - получает список всех вакансий с указанием названия компании,
-        названия вакансии и зарплаты и ссылки на вакансию.
-        3 - получает среднюю зарплату по вакансиям.
-        4 - получает список всех вакансий, у которых зарплата выше средней по всем вакансиям.
-        5 - получает список всех вакансий, в названии которых содержатся переданные в метод слова, например python.
-    """)
-    while True:
-        user_input = input()
-        if user_input == "1":
-            companies_and_vacancies_count = db_manager.get_companies_and_vacancies_count()
-            print("Cписок всех компаний и количество вакансий у каждой компаний:")
-            for i in companies_and_vacancies_count:
-                print(i)
-            print("Введите цифру для получения нужной Вам информации")
-        elif user_input == "2":
-            all_vacancies = db_manager.get_all_vacancies()
-            print("""
-            список всех вакансий с указанием названия компании, названия вакансии и зарплаты и ссылки на вакансию:
-            """)
-            for i in all_vacancies:
-                print(i)
-            print("Введите цифру для получения нужной Вам информации")
-        elif user_input == '3':
-            avg_salary = db_manager.get_avg_salary()
-            print("средняя зарплату по вакансиям:")
-            print(avg_salary)
-            print("Введите цифру для получения нужной Вам информации")
-        elif user_input == "4":
-            vacancies_with_higher_salary = db_manager.get_vacancies_with_higher_salary()
-            print("список всех вакансий, у которых зарплата выше средней по всем вакансиям:")
-            for i in vacancies_with_higher_salary:
-                print(i)
-            print("Введите цифру для получения нужной Вам информации")
-        elif user_input == "5":
-            user_word = input("Введите ключ слово\n").lower()
-            vacancies_with_keyword = db_manager.get_vacancies_with_keyword(user_word)
-            print("список всех вакансий, в названии которых содержатся переданные в метод слова:")
-            for i in vacancies_with_keyword:
-                print(i)
-            print("Введите цифру для получения нужной Вам информации")
-        elif user_input == "0":
-            print("Программа завершила работу")
-            break
+def user_interaction():
+    """Функция для взаимодействия с пользователем"""
+    search_query = input("Введите поисковый запрос: ")
+    hh_vacancies = FindVacancyFromHHApi().get_vacancies(
+        search_query
+    )  # Получение вакансий с hh.ru в формате JSON
+    vacancies_list = Vacancy.cast_to_object_list(
+        hh_vacancies
+    )  # Преобразование набора данных из JSON в список объектов
+    top_n = int(input("Введите количество вакансий для вывода N самых оплачиваемых: "))
+    filter_words = list(
+        input("Введите ключевые слова для фильтрации вакансий: ").split()
+    )
+    salary_range_from = input("Введите диапазон зарплат от: ")  # Пример: 100000
+    salary_range_to = input("Введите диапазон зарплат до: ")  # Пример: 150000
+    filtered_vacancies = filter_vacancies(vacancies_list, filter_words)
+    ranged_vacancies = get_vacancies_by_salary(
+        filtered_vacancies, salary_range_from, salary_range_to
+    )
+    sorted_vacancies = sort_vacancies(ranged_vacancies)
+    top_vacancies = get_top_vacancies(sorted_vacancies, top_n)
+    print(top_vacancies)
 
 
-if __name__ == '__main__':
-    main()
+def user_interaction_with_db():
+    """Функция для создания, заполнения и взаимодействия пользователя с базой данных вакансий"""
+    employer_word = input("Введите слово по которому хотите найти работодателя или оставьте поле пустым:\n")
+    employers_count = int(input("Введите топ N (число до 50) ваканский для просмотра:\n"))
+    employer_obj = FindEmployerFromHHApi()
+    employers = employer_obj.get_employer_info(employers_count, keyword=employer_word)
+    db = DBConnection()
+    db.create_db()
+    db.db_creating_employers()
+    employers_id_list = list(input("Введите через запятую id не менее 10 компаний для отслеживания:\n").split(", "))
+    db.db_filling_columns_for_emps(employers_id_list, employers)
+    db.db_creating_vacancies()
+    for emp_id in employers_id_list:
+        vacancy_list = FindVacancyFromHHApi().get_vacancies_by_employer_id(emp_id)
+        db.db_filling_vacancies(vacancy_list)
+
+
+if __name__ == "__main__":
+    user_interaction_with_db()
