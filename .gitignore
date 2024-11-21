@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -163,10 +162,3 @@ cython_debug/
 .idea/
 /tests/test_log.txt
 test_log.txt
-=======
-# Default ignored files
-/shelf/
-/.idea
-.venv
-.env
->>>>>>> origin/CW
