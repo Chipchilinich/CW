@@ -49,7 +49,7 @@ class DBManager:
 
     def get_vacancies_with_higher_salary(self):
         """получает список всех вакансий, у которых зарплата выше средней по всем вакансиям."""
-        avg_salary = self.get_avg_salary()[0][0]
+        avg_salary = float(self.get_avg_salary())
 
         self.cur.execute(
             """
